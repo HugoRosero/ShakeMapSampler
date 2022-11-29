@@ -370,11 +370,11 @@ def generate_random_shakemap_uncorrelated(shakemap_file,random_seed):
 
 #local testing
 #change this directory where the test file shakemap.xml is located
-file_name="C:\\Users\\Public\\JournalPaperGFZ\\PythonCodesBD\\deus-master\\testinputs\\shakemap.xml"
+file_name="\\testinputs\\shakemap.xml"
 
 random_seed=123
 eq_with_residuals = generate_random_shakemap_uncorrelated(file_name,random_seed)
-with open("C:\\Users\\Public\\JournalPaperGFZ\\PythonCodesBD\\shakyground-master\\out_shakemap.xml", 'w') as f:
+with open("\\testinputs\\out_shakemap.xml", 'w') as f:
     f.write(eq_with_residuals)
  
     
