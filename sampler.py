@@ -162,7 +162,7 @@ def generate_random_shakemap_uncorrelated(shakemap_file,shakemap_outfile,random_
         units['MEDPGA']='g'
         columns.append('MEDPGA')
         #storage in PGA for being read by downstream services
-        grid_data['PGA']=median_values+random_normal_values*std_values
+        grid_data['PGA']=median_values*np.exp(random_normal_values*std_values)
      
     # ensure that event is series
     # if type(event) != pandas.core.series.Series:
