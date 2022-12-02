@@ -33,9 +33,9 @@ Reads a normal shakemap (as it is the output of shakyground for earthquake scena
 
 #local testing
 #change this directory where the test file shakemap.xml is located
-file_name="C:\\Users\\Public\\JournalPaperGFZ\\PythonCodesBD\\deus-master\\testinputs\\shakemap.xml"
-shakemap_outfile="C:\\Users\\Public\\JournalPaperGFZ\\PythonCodesBD\\shakyground-master\\out_shakemap_uncorr.xml"
-shakemap_outfile_corr="C:\\Users\\Public\\JournalPaperGFZ\\PythonCodesBD\\shakyground-master\\out_shakemap_corr.xml"
+file_name="\testinputs\shakemap.xml"
+shakemap_outfile="\out_shakemap_uncorr.xml"
+shakemap_outfile_corr="\out_shakemap_corr.xml"
 random_seed=123
 event,columns,units,grid_data, event_specific_uncertainties, regular_grid = sampler.extract_shakemap_data(file_name)
 grid_data,columns,units = sampler.create_uncorrelated_residuals(grid_data,columns,units,random_seed)
@@ -44,8 +44,7 @@ sampler.save_random_shakemap(shakemap_outfile,event,columns,units,grid_data, eve
 #L=sampler.build_sparse_correlation_matrix(grid_data,PGA,tol=1e-2)
 grid_data,columns,units = sampler.create_correlated_residuals(grid_data,columns,units,random_seed)
 sampler.save_random_shakemap(shakemap_outfile_corr,event,columns,units,grid_data, event_specific_uncertainties,regular_grid,random_seed)
-#with open("C:\\Users\\Public\\JournalPaperGFZ\\PythonCodesBD\\shakyground-master\\out_shakemap.xml", 'w') as f:
-    #f.write(eq_with_residuals)
+
  
 #test correlation model
 print('test')
