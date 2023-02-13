@@ -58,13 +58,13 @@ def main():
     shakemap_outfile=args.intensity_output_file
     random_seed=int(args.random_seed)
     correlated=True
-    event,columns,units,grid_data, event_specific_uncertainties, regular_grid = sampler.extract_shakemap_data(file_name)
+    event,units,grid_data, event_specific_uncertainties, regular_grid = sampler.extract_shakemap_data(file_name)
     if correlated:
-        grid_data,columns,units = sampler.create_correlated_residuals(grid_data,columns,units,random_seed)
+        grid_data,units = sampler.create_correlated_residuals(grid_data,units,random_seed,event_specific_uncertainties)
     else:
-        grid_data,columns,units = sampler.create_uncorrelated_residuals(grid_data,columns,units,random_seed)
+        grid_data,units = sampler.create_uncorrelated_residuals(grid_data,units,random_seed,event_specific_uncertainties)
   
-    sampler.save_random_shakemap(shakemap_outfile,event,columns,units,grid_data, event_specific_uncertainties,regular_grid,random_seed)
+    sampler.save_random_shakemap(shakemap_outfile,event,units,grid_data, event_specific_uncertainties,regular_grid,random_seed)
 
 
 
