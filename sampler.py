@@ -154,68 +154,89 @@ def extract_shakemap_data(shakemap_file):
     for grid_field in grid_fields:
         units.iloc[0][grid_field.attrib["name"]] = grid_field.attrib["units"]
 
-    return event,columns,units,grid_data, event_specific_uncertainties, regular_grid
+    return event,units,grid_data, event_specific_uncertainties, regular_grid
 
-def create_uncorrelated_residuals(grid_data,columns,units,random_seed):    
-    if 'PGA' in columns and 'STDPGA' in columns:
-        median_values=grid_data['PGA']
-        std_values=grid_data['STDPGA']
-        random.seed(random_seed)
-        #generates uncorrelated stantard normal random values, one for each point in the shakemap.
-        #results are reproducible in this way with the fixed random seed
-        random_normal_values=np.random.normal(loc=0.0,scale=1.,size=median_values.shape)
-        #stores the random residuals
-        grid_data['RESPGA']=random_normal_values
-        units['RESPGA']='g'
-        columns.append('RESPGA')
-        #the GMPE is the form ln(rand_IM) = ln(IM)+stdIM*randnorm
-        #We know IM (it is in PGA), hence we get rand_IM = IM*exp(stdIM*randnorm)
-        grid_data['MEDPGA']=median_values
-        units['MEDPGA']='g'
-        columns.append('MEDPGA')
-        #storage in PGA for being read by downstream services
-        grid_data['PGA']=median_values*np.exp(random_normal_values*std_values)
-    return grid_data,columns,units
+def create_uncorrelated_residuals(grid_data,units,random_seed,event_specific_uncertainties):    
+    random.seed(random_seed)
+    for i in event_specific_uncertainties.index:
+        im_name=event_specific_uncertainties.iloc[i]["name"].upper()
+        complete_data= (im_name in grid_data.columns) and ('STD'+im_name in grid_data.columns)
+        if complete_data:
+            median_values=grid_data[im_name]
+            std_values=grid_data['STD'+im_name]
+            
+            #generates uncorrelated stantard normal random values, one for each point in the shakemap.
+            #results are reproducible in this way with the fixed random seed
+            random_normal_values=np.random.normal(loc=0.0,scale=1.,size=median_values.shape)
+            #stores the random residuals
+            grid_data['RES'+im_name]=random_normal_values
+            units['RES'+im_name]=units[im_name]
+            #columns.append('RES'+im_name)
+            #the GMPE is the form ln(rand_IM) = ln(IM)+stdIM*randnorm
+            #We know IM (it is in PGA), hence we get rand_IM = IM*exp(stdIM*randnorm)
+            grid_data['MED'+im_name]=median_values
+            units['MED'+im_name]=units[im_name]
+            #columns.append('MEDPGA')
+            #storage in PGA for being read by downstream services
+            grid_data[im_name]=median_values*np.exp(random_normal_values*std_values)
+    return grid_data,units
 
 
 
-def create_correlated_residuals(grid_data,columns,units,random_seed): 
+def create_correlated_residuals(grid_data,units,random_seed,event_specific_uncertainties): 
     ##### uses only JB2009CorrelationModel #####
-    if 'PGA' in columns and 'STDPGA' in columns:
-        median_values=grid_data['PGA']
-        std_values=grid_data['STDPGA']
-        gx=grid_data['LAT']
-        gy=grid_data['LON']
-        #z=np.ones(median_values.shape)#fake vs30 values. They're not needed for the correlation model, since we use the case with clusters
-        #sites1 = SiteCollection([Site(Point(x,y), z, vs30measured=True, z1pt0=3.4, z2pt5=5.6, backarc=False) for x, y,z  in zip(gx, gy, z)])
-        b_value=jbcorrelation_length(PGA, True)
-        corr_model = gs.Exponential(latlon=True, len_scale=b_value/(3*gs.EARTH_RADIUS))
-        srf=gs.SRF(corr_model,mean=0,seed=random_seed)
-        
-        #generates uncorrelated stantard normal random values, one for each point in the shakemap.
-        #results are reproducible in this way with the fixed random seed
-        #uncorr_residuals_norm=np.random.normal(loc=0.0,scale=1.,size=median_values.shape)
-        #crl_model = crl.JB2009CorrelationModel(True)
-        #Only computing PGA
-        #corr_residuals_norm = apply_correlation(sites1,PGA,uncorr_residuals_norm,L)
-        corr_residuals_norm = srf((gx,gy))
-        corr_residuals_norm = np.asarray(corr_residuals_norm)
-        #stores uncorrelated the random variables
-        #grid_data['UNCRESPGA']=uncorr_residuals_norm
-        #units['UNCRESPGA']='g'
-        #columns.append('UNCRESPGA')
-        #stores the random residuals
-        grid_data['RESPGA']=corr_residuals_norm 
-        units['RESPGA']='g'
-        columns.append('RESPGA')
-        #the GMPE is the form ln(rand_IM) = ln(IM)+stdIM*randnorm
-        #We know IM (it is in PGA), hence we get rand_IM = IM*exp(stdIM*randnorm)
-        grid_data['MEDPGA']=median_values
-        units['MEDPGA']='g'
-        columns.append('MEDPGA')
-        #storage in PGA for being read by downstream services
-        grid_data['PGA']=median_values*np.exp(corr_residuals_norm *std_values)
-    return grid_data,columns,units
+    
+    gx=grid_data['LAT']
+    gy=grid_data['LON']
+    for i in event_specific_uncertainties.index:
+        im_name=event_specific_uncertainties.iloc[i]["name"].upper()
+        complete_data= (im_name in grid_data.columns) and ('STD'+im_name in grid_data.columns)
+        if complete_data:
+            median_values=grid_data[im_name]
+            std_values=grid_data['STD'+im_name]
+            im_input=None
+            if im_name == 'PGA':
+                im_input=PGA
+            elif im_name=='PGV':
+                im_input=PGA
+            elif 'PSA' in im_name:
+                im_input=SA
+                lnam=len(im_name)
+                im_input.period=float(im_name[slice(lnam-2,lnam)])/10
+            if not im_input==None:
+                b_value=jbcorrelation_length(im_input, True)
+                corr_model = gs.Exponential(latlon=True, len_scale=b_value/(3*gs.EARTH_RADIUS))
+                srf=gs.SRF(corr_model,mean=0,seed=random_seed)
+                #z=np.ones(median_values.shape)#fake vs30 values. They're not needed for the correlation model, since we use the case with clusters
+                #sites1 = SiteCollection([Site(Point(x,y), z, vs30measured=True, z1pt0=3.4, z2pt5=5.6, backarc=False) for x, y,z  in zip(gx, gy, z)])
+                
+                
+                
+                
+                #generates uncorrelated stantard normal random values, one for each point in the shakemap.
+                #results are reproducible in this way with the fixed random seed
+                #uncorr_residuals_norm=np.random.normal(loc=0.0,scale=1.,size=median_values.shape)
+                #crl_model = crl.JB2009CorrelationModel(True)
+                #Only computing PGA
+                #corr_residuals_norm = apply_correlation(sites1,PGA,uncorr_residuals_norm,L)
+                corr_residuals_norm = srf((gx,gy))
+                corr_residuals_norm = np.asarray(corr_residuals_norm)
+                #stores uncorrelated the random variables
+                #grid_data['UNCRESPGA']=uncorr_residuals_norm
+                #units['UNCRESPGA']='g'
+                #columns.append('UNCRESPGA')
+                #stores the random residuals
+                grid_data['RES'+im_name]=corr_residuals_norm 
+                units['RES'+im_name]=units[im_name]
+                #columns.append('RESPGA')
+                #the GMPE is the form ln(rand_IM) = ln(IM)+stdIM*randnorm
+                #We know IM (it is in PGA), hence we get rand_IM = IM*exp(stdIM*randnorm)
+                grid_data['MED'+im_name]=median_values
+                units['MED'+im_name]=units[im_name]
+                #columns.append('MEDPGA')
+                #storage in PGA for being read by downstream services
+                grid_data[im_name]=median_values*np.exp(corr_residuals_norm *std_values)
+    return grid_data,units
 
 
 def jbcorrelation_length( imt, vs30_clustering=False):
@@ -245,7 +266,7 @@ def jbcorrelation_length( imt, vs30_clustering=False):
         return b
 
 
-def save_random_shakemap(shakemap_outfile,event,columns,units,grid_data, event_specific_uncertainties,regular_grid,random_seed):
+def save_random_shakemap(shakemap_outfile,event,units,grid_data, event_specific_uncertainties,regular_grid,random_seed):
     nsmap = {
         "xsi": "http://www.w3.org/2001/XMLSchema-instance",
         None: "http://earthquake.usgs.gov/eqcenter/shakemap",
@@ -256,7 +277,7 @@ def save_random_shakemap(shakemap_outfile,event,columns,units,grid_data, event_s
     code_version = le.QName("code_version")
     shakemap_version = le.QName("shakemap_version")
     process_timestamp = le.QName("process_timestamp")
-    #shakemap_originator = le.QName("shakemap_originator")
+    shakemap_originator = le.QName("shakemap_originator")
     now = datetime.datetime.utcnow()
     now = pandas.Series(
         {
@@ -286,7 +307,7 @@ def save_random_shakemap(shakemap_outfile,event,columns,units,grid_data, event_s
             shakemap_version: "1",
             process_timestamp:quakeml.event2utc(now),
             #process_timestamp: "{:04d}-{:02d}-{:02d}T{:02d}:{:02d}:{:09f}Z".format(int(now.year),int(max(now.month, 1)),int(max(now.day, 1)),int(now.hour),int(now.minute),now.second, ),
-            #shakemap_originator: provider,
+            shakemap_originator: "GFZ-TUM",
             map_status: "RELEASED",
             shakemap_event_type: event.iloc[0]["type"],
         },
@@ -437,10 +458,3 @@ def save_random_shakemap(shakemap_outfile,event,columns,units,grid_data, event_s
     
     with open(shakemap_outfile, 'w') as f:
         f.write(le.tostring(shakeml, pretty_print=True, encoding="unicode"))
-
-    
-
-
-    
-   
-
