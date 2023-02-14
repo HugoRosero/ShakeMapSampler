@@ -60,9 +60,9 @@ def main():
     correlated=True
     event,units,grid_data, event_specific_uncertainties, regular_grid = sampler.extract_shakemap_data(file_name)
     if correlated:
-        grid_data,units = sampler.create_correlated_residuals(grid_data,units,random_seed,event_specific_uncertainties)
+        grid_data,units = sampler.create_correlated_residuals(grid_data,units,random_seed)
     else:
-        grid_data,units = sampler.create_uncorrelated_residuals(grid_data,units,random_seed,event_specific_uncertainties)
+        grid_data,units = sampler.create_uncorrelated_residuals(grid_data,units,random_seed)
   
     sampler.save_random_shakemap(shakemap_outfile,event,units,grid_data, event_specific_uncertainties,regular_grid,random_seed)
 
