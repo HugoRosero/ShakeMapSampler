@@ -38,11 +38,11 @@ shakemap_outfile="C:\\Users\\Public\\JournalPaperGFZ\\PythonCodesBD\\shakyground
 shakemap_outfile_corr="C:\\Users\\Public\\JournalPaperGFZ\\PythonCodesBD\\shakyground-master\\out_shakemap_corr.xml"
 random_seed=123
 event,units,grid_data, event_specific_uncertainties, regular_grid = sampler.extract_shakemap_data(file_name)
-grid_data,units = sampler.create_uncorrelated_residuals(grid_data,units,random_seed,event_specific_uncertainties)
+grid_data,units = sampler.create_uncorrelated_residuals(grid_data,units,random_seed)
 
 sampler.save_random_shakemap(shakemap_outfile,event,units,grid_data, event_specific_uncertainties,regular_grid,random_seed)
 #L=sampler.build_sparse_correlation_matrix(grid_data,PGA,tol=1e-2)
-grid_data,units = sampler.create_correlated_residuals(grid_data,units,random_seed,event_specific_uncertainties)
+grid_data,units = sampler.create_correlated_residuals(grid_data,units,random_seed)
 sampler.save_random_shakemap(shakemap_outfile_corr,event,units,grid_data, event_specific_uncertainties,regular_grid,random_seed)
 #with open("C:\\Users\\Public\\JournalPaperGFZ\\PythonCodesBD\\shakyground-master\\out_shakemap.xml", 'w') as f:
     #f.write(eq_with_residuals)
