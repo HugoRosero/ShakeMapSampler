@@ -156,11 +156,11 @@ def extract_shakemap_data(shakemap_file):
 
     return event,units,grid_data, event_specific_uncertainties, regular_grid
 
-def create_uncorrelated_residuals(grid_data,units,random_seed,event_specific_uncertainties):    
+def create_uncorrelated_residuals(grid_data,units,random_seed):    
     random.seed(random_seed)
-    for i in event_specific_uncertainties.index:
-        im_name=event_specific_uncertainties.iloc[i]["name"].upper()
-        complete_data= (im_name in grid_data.columns) and ('STD'+im_name in grid_data.columns)
+    for i_name in grid_data.columns:
+        im_name=i_name.upper()
+        complete_data= ('STD'+im_name in grid_data.columns)
         if complete_data:
             median_values=grid_data[im_name]
             std_values=grid_data['STD'+im_name]
@@ -183,14 +183,14 @@ def create_uncorrelated_residuals(grid_data,units,random_seed,event_specific_unc
 
 
 
-def create_correlated_residuals(grid_data,units,random_seed,event_specific_uncertainties): 
+def create_correlated_residuals(grid_data,units,random_seed): 
     ##### uses only JB2009CorrelationModel #####
     
     gx=grid_data['LAT']
     gy=grid_data['LON']
-    for i in event_specific_uncertainties.index:
-        im_name=event_specific_uncertainties.iloc[i]["name"].upper()
-        complete_data= (im_name in grid_data.columns) and ('STD'+im_name in grid_data.columns)
+    for i_name in grid_data.columns:
+        im_name=i_name.upper()
+        complete_data= ('STD'+im_name in grid_data.columns)
         if complete_data:
             median_values=grid_data[im_name]
             std_values=grid_data['STD'+im_name]
@@ -198,11 +198,11 @@ def create_correlated_residuals(grid_data,units,random_seed,event_specific_uncer
             if im_name == 'PGA':
                 im_input=PGA
             elif im_name=='PGV':
-                im_input=PGA
+                im_input=PGA#we assume its period is the same as the PGA, only for convenience
             elif 'PSA' in im_name:
                 im_input=SA
                 lnam=len(im_name)
-                im_input.period=float(im_name[slice(lnam-2,lnam)])/10
+                im_input.period=float(im_name[slice(lnam-2,lnam)])/10# specific period extracted from the label
             if not im_input==None:
                 b_value=jbcorrelation_length(im_input, True)
                 corr_model = gs.Exponential(latlon=True, len_scale=b_value/(3*gs.EARTH_RADIUS))
@@ -458,3 +458,5 @@ def save_random_shakemap(shakemap_outfile,event,units,grid_data, event_specific_
     
     with open(shakemap_outfile, 'w') as f:
         f.write(le.tostring(shakeml, pretty_print=True, encoding="unicode"))
+
+  
