@@ -301,10 +301,9 @@ def save_random_shakemap(shakemap_outfile,event,units,grid_data, event_specific_
             schemaLocation: "http://earthquake.usgs.gov http://earthquake.usgs.gov/eqcenter/shakemap/xml/schemas/shakemap.xsd",
             event_id: event.iloc[0]["eventID"],
             # FIXME: same as eventID!? No should be related to measure, gmpe etc....
-            shakemap_id: event.iloc[0]["eventID"],
-            # NOTE: not shakemap standard
-            code_version: "shakyground 0.1",
-            shakemap_version: "1",
+            shakemap_id: "{0}/sampled-{1}".format(event.iloc[0]["eventID"], random_seed),
+            code_version: "ShakeMapResampler 1.0",
+            shakemap_version: "seed={0}".format(random_seed),
             process_timestamp:quakeml.event2utc(now),
             #process_timestamp: "{:04d}-{:02d}-{:02d}T{:02d}:{:02d}:{:09f}Z".format(int(now.year),int(max(now.month, 1)),int(max(now.day, 1)),int(now.hour),int(now.minute),now.second, ),
             shakemap_originator: "GFZ-TUM",
@@ -326,7 +325,6 @@ def save_random_shakemap(shakemap_outfile,event,units,grid_data, event_specific_
     event_timestamp = le.QName("event_timestamp")
     event_network = le.QName("event_network")
     event_description = le.QName("event_description")
-    seed = le.QName("seed")
     smevent = le.SubElement(
         shakeml,
         "event",
@@ -342,7 +340,6 @@ def save_random_shakemap(shakemap_outfile,event,units,grid_data, event_specific_
             event_timestamp: str(quakeml.event2utc(event.iloc[0])),
             event_network: str(event.iloc[0]["Agency"]),
             event_description: "",
-            seed:str(random_seed),
         },
         nsmap=nsmap,
     )
