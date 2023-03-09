@@ -33,11 +33,13 @@ Reads a normal shakemap (as it is the output of shakyground for earthquake scena
 
 def extract_shakemap_data(shakemap_file):
     #intensity_map = shakemap.Shakemaps.from_file(shakemap_file).to_intensity_provider()
+    # We can expect that the majority of shakemaps have one huge text node
+    # with the actual grid data. So we will use a parser able to handle those.
+    parser = le.XMLParser(huge_tree=True)
     try:
-        shakeml = le.parse(shakemap_file)
+        shakeml = le.parse(shakemap_file, parser)
     except:
         # maybe string
-        parser = le.XMLParser(huge_tree=True)
         # shakeml = le.parse(io.StringIO(shakemlfile),parser)
         # shakeml = le.parse(shakemlfile,parser)
         try:
